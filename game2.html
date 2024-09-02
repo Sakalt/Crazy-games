@@ -8,23 +8,28 @@
         body { font-family: Arial, sans-serif; margin: 0; }
         canvas { display: block; margin: 0 auto; background: #f0f0f0; }
         #scoreboard { text-align: center; margin: 10px; }
+        #controls { text-align: center; margin: 10px; }
     </style>
 </head>
 <body>
-    <div id="scoreboard">Score: 0 | Level: 1</div>
+    <div id="scoreboard">エネルギー: 100 | レベル: 1</div>
+    <div id="controls">
+        <button onclick="feedCharacter()">食べ物をあげる</button>
+        <button onclick="trainCharacter()">トレーニングする</button>
+    </div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <audio id="backgroundMusic" src="background.mp3" loop></audio>
     <audio id="collisionSound" src="collision.mp3"></audio>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
+
         const images = {
             vista: new Image(),
             longhorn: new Image()
         };
-        images.vista.src = 'vista.png';
-        images.longhorn.src = 'longhorn.png';
+        images.vista.src = 'image/vista.png';
+        images.longhorn.src = 'image/longhorn.png';
 
         const backgroundMusic = document.getElementById('backgroundMusic');
         const collisionSound = document.getElementById('collisionSound');
@@ -36,12 +41,10 @@
             height: 50,
             image: images.vista,
             dx: 2,
-            dy: 2
+            dy: 2,
+            energy: 100, // キャラクターのエネルギー
+            level: 1 // キャラクターのレベル
         };
-
-        let score = 0;
-        let level = 1;
-        let levelThreshold = 10;
 
         const obstacles = [
             { x: 200, y: 200, width: 50, height: 50, color: 'red' },
@@ -55,21 +58,19 @@
         }
 
         function drawHouse() {
-            // 家の枠
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 3;
-            ctx.strokeRect(300, 400, 100, 100); // 家の枠
-            ctx.fillStyle = '#f5deb3'; // ベージュ色
-            ctx.fillRect(300, 400, 100, 100); // 家の中を塗りつぶす
+            ctx.strokeRect(300, 400, 100, 100);
+            ctx.fillStyle = '#f5deb3'; 
+            ctx.fillRect(300, 400, 100, 100);
 
-            // 屋根
             ctx.beginPath();
             ctx.moveTo(290, 400);
             ctx.lineTo(350, 350);
             ctx.lineTo(410, 400);
             ctx.closePath();
             ctx.stroke();
-            ctx.fillStyle = '#d2691e'; // 屋根の色
+            ctx.fillStyle = '#d2691e';
             ctx.fill();
         }
 
@@ -80,36 +81,22 @@
             });
         }
 
-        function updateScore() {
-            score += 1;
-            document.getElementById('scoreboard').textContent = `Score: ${score} | Level: ${level}`;
+        function updateDisplay() {
+            document.getElementById('scoreboard').textContent = `エネルギー: ${character.energy} | レベル: ${character.level}`;
         }
 
-        function updateLevel() {
-            if (score >= level * levelThreshold) {
-                level += 1;
-                character.dx *= 1.1;
-                character.dy *= 1.1;
-                levelThreshold *= 1.5;
-                console.log(`Level Up! Level: ${level}`);
+        function feedCharacter() {
+            character.energy += 10;
+            if (character.energy > 100) character.energy = 100;
+            updateDisplay();
+        }
+
+        function trainCharacter() {
+            if (character.energy > 0) {
+                character.energy -= 10;
+                character.level += 1;
+                updateDisplay();
             }
-        }
-
-        function checkCollision() {
-            obstacles.forEach(obstacle => {
-                if (character.x < obstacle.x + obstacle.width &&
-                    character.x + character.width > obstacle.x &&
-                    character.y < obstacle.y + obstacle.height &&
-                    character.y + character.height > obstacle.y) {
-                    character.dx *= -1;
-                    character.dy *= -1;
-                    playCollisionSound();
-                }
-            });
-        }
-
-        function playCollisionSound() {
-            collisionSound.play();
         }
 
         function gameLoop() {
@@ -119,18 +106,14 @@
             if (character.x < 0 || character.x + character.width > canvas.width) {
                 character.dx *= -1;
                 character.image = (character.image === images.vista) ? images.longhorn : images.vista;
-                updateScore();
             }
             if (character.y < 0 || character.y + character.height > canvas.height) {
                 character.dy *= -1;
                 character.image = (character.image === images.vista) ? images.longhorn : images.vista;
-                updateScore();
             }
 
             drawCharacter();
             drawObstacles();
-            checkCollision();
-            updateLevel();
             requestAnimationFrame(gameLoop);
         }
 
