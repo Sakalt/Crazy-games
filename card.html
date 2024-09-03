@@ -79,10 +79,10 @@
             const coinsDisplay = document.getElementById('coins');
             
             let allCards = ['2♥', '3♠', '4♦', '5♣', '6♥', '7♠', '8♦', '9♣', '10♥', 'J♠', 'Q♦', 'K♣', 'A♥'];
-            let deck = [...allCards]; // デッキのコピー
+            let deck = [...allCards];
             let playerHands = {1: [], 2: [], 3: [], 4: []};
             let playerCoins = 0;
-            let hiddenHands = {1: [], 2: [], 3: [], 4: []}; // 相手の手札を隠す
+            let hiddenHands = {1: [], 2: [], 3: [], 4: []};
 
             function shuffle(array) {
                 for (let i = array.length - 1; i > 0; i--) {
@@ -95,15 +95,15 @@
                 shuffle(deck);
                 let index = 0;
                 for (let i = 1; i <= 4; i++) {
-                    playerHands[i] = deck.slice(index, index + 5); // 各プレイヤーに5枚ずつ配る
-                    hiddenHands[i] = deck.slice(index + 5, index + 10); // 相手の手札
+                    playerHands[i] = deck.slice(index, index + 5);
+                    hiddenHands[i] = deck.slice(index + 5, index + 10);
                     index += 5;
                 }
                 updateHands();
             }
 
             function resetCards() {
-                deck = [...allCards]; // デッキをリセット
+                deck = [...allCards];
                 dealCards();
             }
 
@@ -118,12 +118,10 @@
             }
 
             function handValue(hand) {
-                // 簡単な手札評価（ここでは手札の数で評価）
-                return hand.length; // 例えば手札の数を評価
+                return hand.length;
             }
 
             function battle() {
-                // バトルロジック（手札の数で勝者を決定）
                 let scores = {};
                 for (let i = 1; i <= 4; i++) {
                     scores[i] = handValue(playerHands[i]);
@@ -131,18 +129,17 @@
 
                 let winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
                 battleLog.innerHTML = `プレイヤー${winner}の勝ち！`;
-                playerCoins += 10;  // 勝ったらコイン獲得
+                playerCoins += 10;
                 coinsDisplay.innerHTML = `コイン: ${playerCoins}`;
 
-                // 次のターンの準備
                 setTimeout(() => {
                     resetCards();
                     battleLog.innerHTML = '次のターンを開始します...';
-                }, 2000); // 2秒後に次のターンを開始
+                    startNextTurn(); // 次のターンの開始
+                }, 2000);
             }
 
             function cpuTurn() {
-                // CPUのターンロジック: カードを引くか、相手のカードを引くか
                 setTimeout(() => {
                     let action = Math.random() < 0.5 ? 'drawOwn' : 'drawOpponent';
                     if (action === 'drawOwn') {
@@ -156,7 +153,7 @@
             function drawCpuOwnCard() {
                 if (deck.length > 0) {
                     let drawnCard = deck.pop();
-                    playerHands[2].push(drawnCard); // CPUが自分のカードを引く
+                    playerHands[2].push(drawnCard);
                     updateHands();
                     battleLog.innerHTML = `CPUが自分のカードを1枚引きました。`;
                 } else {
@@ -166,13 +163,13 @@
             }
 
             function drawCpuOpponentCard() {
-                let successChance = Math.random(); // ガチャ成功確率
-                let opponent = Math.floor(Math.random() * 3) + 1; // プレイヤー1（自分）か他のプレイヤーから選択
+                let successChance = Math.random();
+                let opponent = Math.floor(Math.random() * 3) + 1;
 
-                if (successChance > 0.3) { // 70%の確率で成功
+                if (successChance > 0.3) {
                     if (hiddenHands[opponent].length > 0) {
                         let drawnCard = hiddenHands[opponent].pop();
-                        playerHands[2].push(drawnCard); // CPU（プレイヤー2）が相手のカードを引く
+                        playerHands[2].push(drawnCard);
                         updateHands();
                         battleLog.innerHTML = `CPUがプレイヤー${opponent}からカードを1枚引きました。`;
                     } else {
@@ -185,15 +182,19 @@
             }
 
             function drawCardFromOpponent() {
-                let opponent = Math.floor(Math.random() * 3) + 2; // プレイヤー2〜4から選択
+                let opponent = Math.floor(Math.random() * 3) + 2;
                 if (hiddenHands[opponent].length > 0) {
                     let drawnCard = hiddenHands[opponent].pop();
-                    playerHands[1].push(drawnCard); // プレイヤー1（自分）にカードを追加
+                    playerHands[1].push(drawnCard);
                     updateHands();
                     battleLog.innerHTML = `プレイヤー${opponent}からカードを1枚引きました。`;
                 } else {
                     battleLog.innerHTML = `プレイヤー${opponent}には引けるカードがありません。`;
                 }
+            }
+
+            function startNextTurn() {
+                cpuTurn();
             }
 
             document.getElementById('draw-cards').addEventListener('click', () => {
@@ -230,7 +231,6 @@
                 }
             });
 
-            // ゲームの初期化
             resetCards();
         });
     </script>
