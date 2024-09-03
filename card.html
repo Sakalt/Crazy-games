@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>4人プレイカードゲーム</title>
+    <title>永遠に続く4人プレイカードゲーム</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -133,6 +133,12 @@
                 battleLog.innerHTML = `プレイヤー${winner}の勝ち！`;
                 playerCoins += 10;  // 勝ったらコイン獲得
                 coinsDisplay.innerHTML = `コイン: ${playerCoins}`;
+
+                // 次のターンの準備
+                setTimeout(() => {
+                    resetCards();
+                    battleLog.innerHTML = '次のターンを開始します...';
+                }, 2000); // 2秒後に次のターンを開始
             }
 
             function cpuTurn() {
@@ -199,7 +205,6 @@
             });
 
             document.getElementById('end-turn').addEventListener('click', () => {
-                battle();
                 cpuTurn();
             });
 
