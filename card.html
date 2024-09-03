@@ -62,7 +62,7 @@
             <button id="send-chat">送信</button>
             <div id="chat-log"></div>
         </div>
-        <div id="coins">コイン: 0</div>
+        <div id="coins">プレイヤー1コイン: 0, プレイヤー2コイン: 0, プレイヤー3コイン: 0, プレイヤー4コイン: 0</div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -81,8 +81,9 @@
             let allCards = ['2♥', '3♠', '4♦', '5♣', '6♥', '7♠', '8♦', '9♣', '10♥', 'J♠', 'Q♦', 'K♣', 'A♥'];
             let deck = [...allCards];
             let playerHands = {1: [], 2: [], 3: [], 4: []};
-            let playerCoins = 0;
+            let playerCoins = {1: 0, 2: 0, 3: 0, 4: 0};
             let hiddenHands = {1: [], 2: [], 3: [], 4: []};
+            let cpuTurnCount = 0; // CPUターンのカウント
 
             function shuffle(array) {
                 for (let i = array.length - 1; i > 0; i--) {
@@ -105,6 +106,7 @@
             function resetCards() {
                 deck = [...allCards];
                 dealCards();
+                cpuTurnCount = 0; // ターンカウントをリセット
             }
 
             function updateHands() {
@@ -115,6 +117,7 @@
                         playerElements[i].innerHTML = `プレイヤー${i}の手札: ${hiddenHands[i].length}枚（非表示）`;
                     }
                 }
+                coinsDisplay.innerHTML = `プレイヤー1コイン: ${playerCoins[1]}, プレイヤー2コイン: ${playerCoins[2]}, プレイヤー3コイン: ${playerCoins[3]}, プレイヤー4コイン: ${playerCoins[4]}`;
             }
 
             function handValue(hand) {
@@ -129,8 +132,8 @@
 
                 let winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
                 battleLog.innerHTML = `プレイヤー${winner}の勝ち！`;
-                playerCoins += 10;
-                coinsDisplay.innerHTML = `コイン: ${playerCoins}`;
+                playerCoins[winner] += 10; // 勝者に10コイン追加
+                updateHands();
 
                 setTimeout(() => {
                     resetCards();
@@ -140,14 +143,20 @@
             }
 
             function cpuTurn() {
-                setTimeout(() => {
-                    let action = Math.random() < 0.5 ? 'drawOwn' : 'drawOpponent';
-                    if (action === 'drawOwn') {
-                        drawCpuOwnCard();
-                    } else {
-                        drawCpuOpponentCard();
-                    }
-                }, 1000);
+                if (cpuTurnCount < 3) { // CPUのターンが3回未満の場合
+                    cpuTurnCount++;
+                    setTimeout(() => {
+                        let action = Math.random() < 0.5 ? 'drawOwn' : 'drawOpponent';
+                        if (action === 'drawOwn') {
+                            drawCpuOwnCard();
+                        } else {
+                            drawCpuOpponentCard();
+                        }
+                    }, 1000);
+                } else {
+                    cpuTurnCount = 0; // ターンカウントをリセット
+                    battleLog.innerHTML = 'CPUのターンが終了しました。プレイヤーのターンです。';
+                }
             }
 
             function drawCpuOwnCard() {
@@ -159,7 +168,7 @@
                 } else {
                     battleLog.innerHTML = `デッキに引けるカードがありません。`;
                 }
-                battle();
+                checkForNextTurn();
             }
 
             function drawCpuOpponentCard() {
@@ -178,7 +187,7 @@
                 } else {
                     battleLog.innerHTML = `ガチャ失敗！CPUはカードを引けませんでした。`;
                 }
-                battle();
+                checkForNextTurn();
             }
 
             function drawCardFromOpponent() {
@@ -193,16 +202,27 @@
                 }
             }
 
+            function checkForNextTurn() {
+                if (cpuTurnCount < 3) {
+                    cpuTurn(); // 次のCPUターン
+                } else {
+                    cpuTurnCount = 0; // ターンカウントをリセット
+                    battleLog.innerHTML = 'CPUのターンが終了しました。プレイヤーのターンです。';
+                }
+            }
+
             function startNextTurn() {
                 cpuTurn();
             }
 
             document.getElementById('draw-cards').addEventListener('click', () => {
                 dealCards();
+                battleLog.innerHTML = 'カードを配りました。ゲーム開始！';
             });
 
             document.getElementById('reset-cards').addEventListener('click', () => {
                 resetCards();
+                battleLog.innerHTML = 'カードをリセットしました。';
             });
 
             document.getElementById('end-turn').addEventListener('click', () => {
@@ -214,24 +234,19 @@
                     let drawnCard = deck.pop();
                     playerHands[1].push(drawnCard);
                     updateHands();
+                    battleLog.innerHTML = '自分のカードを1枚引きました。';
                 } else {
                     battleLog.innerHTML = `デッキに引けるカードがありません。`;
                 }
             });
 
-            document.getElementById('draw-opponent-card').addEventListener('click', () => {
-                drawCardFromOpponent();
-            });
+            document.getElementById('draw-opponent-card').addEventListener('click', drawCardFromOpponent);
 
             sendChat.addEventListener('click', () => {
-                let message = chatInput.value;
-                if (message) {
-                    chatLog.innerHTML += `<p>プレイヤー: ${message}</p>`;
-                    chatInput.value = '';
-                }
+                const message = chatInput.value;
+                chatLog.innerHTML += `<div>プレイヤー1: ${message}</div>`;
+                chatInput.value = '';
             });
-
-            resetCards();
         });
     </script>
 </body>
