@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>4人プレイカードゲーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        #game {
+            text-align: center;
+        }
+        .player-hand {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            display: inline-block;
+        }
+        #battle-log {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            height: 100px;
+            overflow-y: scroll;
+        }
+        #chat {
+            margin-top: 20px;
+        }
+        #chat-log {
+            border: 1px solid #ccc;
+            height: 100px;
+            overflow-y: scroll;
+        }
+        button {
+            margin: 5px;
+        }
+        #player-cards {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="player1" class="player-hand"></div>
+        <div id="player2" class="player-hand"></div>
+        <div id="player3" class="player-hand"></div>
+        <div id="player4" class="player-hand"></div>
+        <div id="battle-log"></div>
+        <button id="draw-cards">カードを引く</button>
+        <button id="reset-cards">カードをリセット</button>
+        <button id="end-turn">ターン終了</button>
+        <div id="player-cards">
+            <button id="draw-own-card">自分のカードを引く</button>
+            <button id="draw-opponent-card">相手のカードを引く</button>
+        </div>
+        <div id="chat">
+            <input type="text" id="chat-input" placeholder="メッセージを入力...">
+            <button id="send-chat">送信</button>
+            <div id="chat-log"></div>
+        </div>
+        <div id="coins">コイン: 0</div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const playerElements = {
+                1: document.getElementById('player1'),
+                2: document.getElementById('player2'),
+                3: document.getElementById('player3'),
+                4: document.getElementById('player4'),
+            };
+            const battleLog = document.getElementById('battle-log');
+            const chatLog = document.getElementById('chat-log');
+            const chatInput = document.getElementById('chat-input');
+            const sendChat = document.getElementById('send-chat');
+            const coinsDisplay = document.getElementById('coins');
+            
+            let allCards = ['2♥', '3♠', '4♦', '5♣', '6♥', '7♠', '8♦', '9♣', '10♥', 'J♠', 'Q♦', 'K♣', 'A♥'];
+            let deck = [...allCards]; // デッキのコピー
+            let playerHands = {1: [], 2: [], 3: [], 4: []};
+            let playerCoins = 0;
+            let hiddenHands = {1: [], 2: [], 3: [], 4: []}; // 相手の手札を隠す
+
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            function dealCards() {
+                shuffle(deck);
+                let index = 0;
+                for (let i = 1; i <= 4; i++) {
+                    playerHands[i] = deck.slice(index, index + 5); // 各プレイヤーに5枚ずつ配る
+                    hiddenHands[i] = deck.slice(index + 5, index + 10); // 相手の手札
+                    index += 5;
+                }
+                updateHands();
+            }
+
+            function resetCards() {
+                deck = [...allCards]; // デッキをリセット
+                dealCards();
+            }
+
+            function updateHands() {
+                for (let i = 1; i <= 4; i++) {
+                    if (i === 1) {
+                        playerElements[i].innerHTML = `自分の手札: ${playerHands[i].join(', ')}`;
+                    } else {
+                        playerElements[i].innerHTML = `プレイヤー${i}の手札: ${hiddenHands[i].length}枚（非表示）`;
+                    }
+                }
+            }
+
+            function handValue(hand) {
+                // 簡単な手札評価（ここでは手札の数で評価）
+                return hand.length; // 例えば手札の数を評価
+            }
+
+            function battle() {
+                // バトルロジック（手札の数で勝者を決定）
+                let scores = {};
+                for (let i = 1; i <= 4; i++) {
+                    scores[i] = handValue(playerHands[i]);
+                }
+
+                let winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+                battleLog.innerHTML = `プレイヤー${winner}の勝ち！`;
+                playerCoins += 10;  // 勝ったらコイン獲得
+                coinsDisplay.innerHTML = `コイン: ${playerCoins}`;
+            }
+
+            function cpuTurn() {
+                // CPUのターンロジック: カードを引くか、相手のカードを引くか
+                setTimeout(() => {
+                    let action = Math.random() < 0.5 ? 'drawOwn' : 'drawOpponent';
+                    if (action === 'drawOwn') {
+                        drawCpuOwnCard();
+                    } else {
+                        drawCpuOpponentCard();
+                    }
+                }, 1000);
+            }
+
+            function drawCpuOwnCard() {
+                if (deck.length > 0) {
+                    let drawnCard = deck.pop();
+                    playerHands[2].push(drawnCard); // CPUが自分のカードを引く
+                    updateHands();
+                    battleLog.innerHTML = `CPUが自分のカードを1枚引きました。`;
+                } else {
+                    battleLog.innerHTML = `デッキに引けるカードがありません。`;
+                }
+                battle();
+            }
+
+            function drawCpuOpponentCard() {
+                let successChance = Math.random(); // ガチャ成功確率
+                let opponent = Math.floor(Math.random() * 3) + 1; // プレイヤー1（自分）か他のプレイヤーから選択
+
+                if (successChance > 0.3) { // 70%の確率で成功
+                    if (hiddenHands[opponent].length > 0) {
+                        let drawnCard = hiddenHands[opponent].pop();
+                        playerHands[2].push(drawnCard); // CPU（プレイヤー2）が相手のカードを引く
+                        updateHands();
+                        battleLog.innerHTML = `CPUがプレイヤー${opponent}からカードを1枚引きました。`;
+                    } else {
+                        battleLog.innerHTML = `プレイヤー${opponent}には引けるカードがありません。`;
+                    }
+                } else {
+                    battleLog.innerHTML = `ガチャ失敗！CPUはカードを引けませんでした。`;
+                }
+                battle();
+            }
+
+            function drawCardFromOpponent() {
+                let opponent = Math.floor(Math.random() * 3) + 2; // プレイヤー2〜4から選択
+                if (hiddenHands[opponent].length > 0) {
+                    let drawnCard = hiddenHands[opponent].pop();
+                    playerHands[1].push(drawnCard); // プレイヤー1（自分）にカードを追加
+                    updateHands();
+                    battleLog.innerHTML = `プレイヤー${opponent}からカードを1枚引きました。`;
+                } else {
+                    battleLog.innerHTML = `プレイヤー${opponent}には引けるカードがありません。`;
+                }
+            }
+
+            document.getElementById('draw-cards').addEventListener('click', () => {
+                dealCards();
+            });
+
+            document.getElementById('reset-cards').addEventListener('click', () => {
+                resetCards();
+            });
+
+            document.getElementById('end-turn').addEventListener('click', () => {
+                battle();
+                cpuTurn();
+            });
+
+            document.getElementById('draw-own-card').addEventListener('click', () => {
+                if (deck.length > 0) {
+                    let drawnCard = deck.pop();
+                    playerHands[1].push(drawnCard);
+                    updateHands();
+                } else {
+                    battleLog.innerHTML = `デッキに引けるカードがありません。`;
+                }
+            });
+
+            document.getElementById('draw-opponent-card').addEventListener('click', () => {
+                drawCardFromOpponent();
+            });
+
+            sendChat.addEventListener('click', () => {
+                let message = chatInput.value;
+                if (message) {
+                    chatLog.innerHTML += `<p>プレイヤー: ${message}</p>`;
+                    chatInput.value = '';
+                }
+            });
+
+            // ゲームの初期化
+            resetCards();
+        });
+    </script>
+</body>
+</html>
